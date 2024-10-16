@@ -189,7 +189,7 @@ constexpr auto cli_parsing_error = -3;
 ///    Uses evmone VMs, registers custom benchmark with the code from the given file,
 ///    and the given input. The benchmark will compare the output with the provided
 ///    expected one.
-std::tuple<int, std::vector<BenchmarkCase>> parseargs(int argc, char** argv)
+std::tuple<int, std::vector<BenchmarkCase>, bool> parseargs(int argc, char** argv)
 {
     // Arguments' placeholders:
     std::string evmc_config;
@@ -197,6 +197,7 @@ std::tuple<int, std::vector<BenchmarkCase>> parseargs(int argc, char** argv)
     std::string code_hex_file;
     std::string input_hex;
     std::string expected_output_hex;
+    std::string dir_or_hex;
 
     switch (argc)
     {
@@ -204,7 +205,7 @@ std::tuple<int, std::vector<BenchmarkCase>> parseargs(int argc, char** argv)
         // Run with built-in synthetic benchmarks only.
         break;
     case 2:
-        benchmarks_dir = argv[1];
+        dir_or_hex = argv[1];
         break;
     case 3:
         evmc_config = argv[1];
@@ -217,7 +218,19 @@ std::tuple<int, std::vector<BenchmarkCase>> parseargs(int argc, char** argv)
         break;
     default:
         std::cerr << "Too many arguments\n";
-        return {cli_parsing_error, {}};
+        return {cli_parsing_error, {}, false};
+    }
+
+    if (dir_or_hex.starts_with("0x"))
+    {
+        return {
+            0, 
+            {BenchmarkCase{"bytecode", from_hex(dir_or_hex).value(), {BenchmarkCase::Input{"", from_hex("").value()}}}}, 
+            true};
+    }
+    else
+    {
+        benchmarks_dir = dir_or_hex;
     }
 
     if (!evmc_config.empty())
@@ -231,7 +244,7 @@ std::tuple<int, std::vector<BenchmarkCase>> parseargs(int argc, char** argv)
                 std::cerr << "EVMC loading error: " << error << "\n";
             else
                 std::cerr << "EVMC loading error " << ec << "\n";
-            return {static_cast<int>(ec), {}};
+            return {static_cast<int>(ec), {}, false};
         }
 
         std::cout << "External VM: " << evmc_config << "\n";
@@ -239,7 +252,7 @@ std::tuple<int, std::vector<BenchmarkCase>> parseargs(int argc, char** argv)
 
     if (!benchmarks_dir.empty())
     {
-        return {0, load_benchmarks_from_dir(benchmarks_dir)};
+        return {0, load_benchmarks_from_dir(benchmarks_dir), false};
     }
 
     if (!code_hex_file.empty())
@@ -249,11 +262,10 @@ std::tuple<int, std::vector<BenchmarkCase>> parseargs(int argc, char** argv)
                        from_spaced_hex(
                            std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{})
                            .value(),
-                       {BenchmarkCase::Input{"", from_hex(input_hex).value(),
-                           from_hex(expected_output_hex).value()}}}}};
+                       {BenchmarkCase::Input{"", from_hex(input_hex).value(), from_hex(expected_output_hex).value()}}}}, false};
     }
 
-    return {0, {}};
+    return {0, {}, false};
 }
 }  // namespace
 }  // namespace evmone::test
@@ -264,18 +276,23 @@ int main(int argc, char** argv)
     try
     {
         Initialize(&argc, argv);  // Consumes --benchmark_ options.
-        const auto [ec, benchmark_cases] = parseargs(argc, argv);
+        const auto [ec, benchmark_cases, base_only] = parseargs(argc, argv);
         if (ec == cli_parsing_error && ReportUnrecognizedArguments(argc, argv))
             return ec;
 
         if (ec != 0)
             return ec;
 
-        registered_vms["advanced"] = evmc::VM{evmc_create_evmone(), {{"advanced", ""}}};
         registered_vms["baseline"] = evmc::VM{evmc_create_evmone()};
-        registered_vms["bnocgoto"] = evmc::VM{evmc_create_evmone(), {{"cgoto", "no"}}};
         register_benchmarks(benchmark_cases);
-        register_synthetic_benchmarks();
+
+        if (!base_only)
+        {
+            registered_vms["advanced"] = evmc::VM{evmc_create_evmone(), {{"advanced", ""}}};
+            registered_vms["bnocgoto"] = evmc::VM{evmc_create_evmone(), {{"cgoto", "no"}}};
+            register_synthetic_benchmarks();
+        }
+
         RunSpecifiedBenchmarks();
         return 0;
     }
