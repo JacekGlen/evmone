@@ -223,9 +223,9 @@ std::tuple<int, std::vector<BenchmarkCase>, bool> parseargs(int argc, char** arg
 
     if (dir_or_hex.starts_with("0x"))
     {
-        return {
-            0, 
-            {BenchmarkCase{"bytecode", from_hex(dir_or_hex).value(), {BenchmarkCase::Input{"", from_hex("").value()}}}}, 
+        return {0,
+            {BenchmarkCase{"bytecode", from_hex(dir_or_hex).value(),
+                {BenchmarkCase::Input{"", from_hex("").value()}}}},
             true};
     }
     else
@@ -262,7 +262,9 @@ std::tuple<int, std::vector<BenchmarkCase>, bool> parseargs(int argc, char** arg
                        from_spaced_hex(
                            std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{})
                            .value(),
-                       {BenchmarkCase::Input{"", from_hex(input_hex).value(), from_hex(expected_output_hex).value()}}}}, false};
+                   {BenchmarkCase::Input{"", from_hex(input_hex).value(),
+                           from_hex(expected_output_hex).value()}}}},
+            false};
     }
 
     return {0, {}, false};
@@ -283,13 +285,13 @@ int main(int argc, char** argv)
         if (ec != 0)
             return ec;
 
+        registered_vms["advanced"] = evmc::VM{evmc_create_evmone(), {{"advanced", ""}}};
         registered_vms["baseline"] = evmc::VM{evmc_create_evmone()};
+        registered_vms["bnocgoto"] = evmc::VM{evmc_create_evmone(), {{"cgoto", "no"}}};
         register_benchmarks(benchmark_cases);
 
         if (!base_only)
         {
-            registered_vms["advanced"] = evmc::VM{evmc_create_evmone(), {{"advanced", ""}}};
-            registered_vms["bnocgoto"] = evmc::VM{evmc_create_evmone(), {{"cgoto", "no"}}};
             register_synthetic_benchmarks();
         }
 
