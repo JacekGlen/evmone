@@ -9,5 +9,5 @@ include(HunterGate)
 
 HunterGate(
     URL "https://github.com/cpp-pm/hunter/archive/v0.25.8.tar.gz"
-    SHA1 "69e4a05bd514bb05cb2c5aa02ce8ac420516aaf7"
+    SHA1 "26c79d587883ec910bce168e25f6ac4595f97033"
 )
