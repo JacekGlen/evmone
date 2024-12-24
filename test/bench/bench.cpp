@@ -230,9 +230,9 @@ std::tuple<int, std::vector<BenchmarkCase>, bool> parseargs(int argc, char** arg
 
     if (dir_or_hex.starts_with("0x"))
     {
-        return {
-            0, 
-            {BenchmarkCase{"bytecode", from_hex(dir_or_hex).value(), {BenchmarkCase::Input{"", from_hex("").value()}}}}, 
+        return {0,
+            {BenchmarkCase{"bytecode", from_hex(dir_or_hex).value(),
+                {BenchmarkCase::Input{"", from_hex("").value()}}}},
             true};
     }
     else
@@ -265,11 +265,14 @@ std::tuple<int, std::vector<BenchmarkCase>, bool> parseargs(int argc, char** arg
     if (!code_hex_file.empty())
     {
         std::ifstream file{code_hex_file};
-        return {0, {BenchmarkCase{code_hex_file,
-                       from_spaced_hex(
-                           std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{})
-                           .value(),
-                       {BenchmarkCase::Input{"", from_hex(input_hex).value(), from_hex(expected_output_hex).value()}}}}, false};
+        return {0,
+            {BenchmarkCase{code_hex_file,
+                from_spaced_hex(
+                    std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{})
+                    .value(),
+                {BenchmarkCase::Input{
+                    "", from_hex(input_hex).value(), from_hex(expected_output_hex).value()}}}},
+            false};
     }
 
     return {0, {}, false};
