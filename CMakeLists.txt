@@ -25,7 +25,7 @@ cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
 include(Hunter/init)
 
 project(evmone LANGUAGES CXX C)
-set(PROJECT_VERSION 0.13.0)
+set(PROJECT_VERSION 0.15.0)
 
 string(REGEX MATCH "([0-9]+)\\.([0-9]+)" _ ${PROJECT_VERSION})
 set(PROJECT_VERSION_MAJOR ${CMAKE_MATCH_1})
@@ -70,7 +70,10 @@ if(CABLE_COMPILER_GNULIKE)
     )
 
     if(CABLE_COMPILER_CLANG)
-        set(CMAKE_CXX_FLAGS_COVERAGE "-fprofile-instr-generate -fcoverage-mapping")
+        # Enable Clang's Source Based Coverage.
+        # https://clang.llvm.org/docs/SourceBasedCodeCoverage.html
+        # We can enable optimizations and disable asserts.
+        set(CMAKE_CXX_FLAGS_COVERAGE "-O2 -DNDEBUG -fprofile-instr-generate -fcoverage-mapping")
     elseif(CABLE_COMPILER_GNU)
         set(CMAKE_CXX_FLAGS_COVERAGE "--coverage")
     endif()

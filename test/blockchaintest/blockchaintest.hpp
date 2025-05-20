@@ -39,13 +39,16 @@ struct BlockHeader
     hash256 transactions_root;
     hash256 withdrawal_root;
     hash256 parent_beacon_block_root;
-    uint64_t excess_blob_gas;
+    std::optional<uint64_t> blob_gas_used;
+    std::optional<uint64_t> excess_blob_gas;
+    hash256 requests_hash;
 };
 
 struct TestBlock
 {
     state::BlockInfo block_info;
     std::vector<state::Transaction> transactions;
+    bool valid = true;
 
     BlockHeader expected_block_header;
 };

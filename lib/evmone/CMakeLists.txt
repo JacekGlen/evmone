@@ -17,6 +17,8 @@ add_library(evmone
     baseline_instruction_table.cpp
     baseline_instruction_table.hpp
     constants.hpp
+    delegation.cpp
+    delegation.hpp
     eof.cpp
     eof.hpp
     instructions.hpp
@@ -25,6 +27,7 @@ add_library(evmone
     instructions_storage.cpp
     instructions_traits.hpp
     instructions_xmacro.hpp
+    lru_cache.hpp
     tracing.cpp
     tracing.hpp
     vm.cpp

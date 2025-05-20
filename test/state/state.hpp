@@ -9,6 +9,8 @@
 #include "bloom_filter.hpp"
 #include "errors.hpp"
 #include "hash_utils.hpp"
+#include "state_diff.hpp"
+#include "state_view.hpp"
 #include "transaction.hpp"
 #include <variant>
 
@@ -61,17 +63,21 @@ class State
         std::variant<JournalBalanceChange, JournalTouched, JournalStorageChange, JournalNonceBump,
             JournalCreate, JournalTransientStorageChange, JournalDestruct, JournalAccessAccount>;
 
-    std::unordered_map<address, Account> m_accounts;
+    /// The read-only view of the initial (cold) state.
+    const StateView& m_initial;
 
-    /// The state journal: the list of changes made in the state
+    /// The accounts loaded from the initial state and potentially modified.
+    std::unordered_map<address, Account> m_modified;
+
+    /// The state journal: the list of changes made to the state
     /// with information how to revert them.
     std::vector<JournalEntry> m_journal;
 
 public:
-    State() = default;
+    explicit State(const StateView& state_view) noexcept : m_initial{state_view} {}
     State(const State&) = delete;
-    State(State&&) = default;
-    State& operator=(State&&) = default;
+    State(State&&) = delete;
+    State& operator=(State&&) = delete;
 
     /// Inserts the new account at the address.
     /// There must not exist any account under this address before.
@@ -86,9 +92,11 @@ public:
     /// Gets an existing account or inserts new account.
     Account& get_or_insert(const address& addr, Account account = {});
 
-    [[nodiscard]] auto& get_accounts() noexcept { return m_accounts; }
+    bytes_view get_code(const address& addr);
 
-    [[nodiscard]] const auto& get_accounts() const noexcept { return m_accounts; }
+    StorageValue& get_storage(const address& addr, const bytes32& key);
+
+    StateDiff build_diff(evmc_revision rev) const;
 
     /// Returns the state journal checkpoint. It can be later used to in rollback()
     /// to revert changes newer than the checkpoint.
@@ -125,15 +133,21 @@ public:
 ///
 /// Applies block reward to coinbase, withdrawals (post Shanghai) and deletes empty touched accounts
 /// (post Spurious Dragon).
-void finalize(State& state, evmc_revision rev, const address& coinbase,
-    std::optional<uint64_t> block_reward, std::span<const Ommer> ommers,
+[[nodiscard]] StateDiff finalize(const StateView& state_view, evmc_revision rev,
+    const address& coinbase, std::optional<uint64_t> block_reward, std::span<const Ommer> ommers,
     std::span<const Withdrawal> withdrawals);
 
-[[nodiscard]] std::variant<TransactionReceipt, std::error_code> transition(State& state,
-    const BlockInfo& block, const Transaction& tx, evmc_revision rev, evmc::VM& vm,
-    int64_t block_gas_left, int64_t blob_gas_left);
+/// Executes a valid transaction.
+///
+/// @return Transaction receipt with state diff.
+TransactionReceipt transition(const StateView& state, const BlockInfo& block,
+    const BlockHashes& block_hashes, const Transaction& tx, evmc_revision rev, evmc::VM& vm,
+    const TransactionProperties& tx_props);
 
-std::variant<int64_t, std::error_code> validate_transaction(const Account& sender_acc,
-    const BlockInfo& block, const Transaction& tx, evmc_revision rev, int64_t block_gas_left,
-    int64_t blob_gas_left) noexcept;
+/// Validate a transaction.
+///
+/// @return Computed execution gas limit or validation error.
+[[nodiscard]] std::variant<TransactionProperties, std::error_code> validate_transaction(
+    const StateView& state_view, const BlockInfo& block, const Transaction& tx, evmc_revision rev,
+    int64_t block_gas_left, int64_t blob_gas_left) noexcept;
 }  // namespace evmone::state

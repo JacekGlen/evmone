@@ -17,7 +17,6 @@ target_sources(
     ethash_difficulty.hpp
     ethash_difficulty.cpp
     hash_utils.hpp
-    hash_utils.cpp
     host.hpp
     host.cpp
     mpt.hpp
@@ -29,9 +28,13 @@ target_sources(
     precompiles_internal.hpp
     precompiles_stubs.hpp
     precompiles_stubs.cpp
+    requests.hpp
+    requests.cpp
     rlp.hpp
     state.hpp
     state.cpp
+    state_diff.hpp
+    state_view.hpp
     system_contracts.hpp
     system_contracts.cpp
     test_state.hpp
@@ -40,13 +43,13 @@ target_sources(
     transaction.cpp
 )
 
-option(EVMONE_PRECOMPILES_SILKPRE "Enable precompiles support via silkpre library" OFF)
+option(EVMONE_PRECOMPILES_SILKPRE "Enable precompiles from silkpre library (for benchmarking only)" OFF)
 if(EVMONE_PRECOMPILES_SILKPRE)
     include(FetchContent)
     FetchContent_Declare(
         silkpre
-        GIT_REPOSITORY https://github.com/torquem-ch/silkpre
-        GIT_TAG 3322bb898ac9528fc2cf9a8df1e48360420d0c1a
+        GIT_REPOSITORY https://github.com/erigontech/silkpre
+        GIT_TAG f972090a41de75073f55e914bf0107838b4b86a4
         GIT_SHALLOW TRUE
     )
     set(BUILD_SHARED_LIBS_ORIG ${BUILD_SHARED_LIBS})
@@ -67,5 +70,18 @@ if(EVMONE_PRECOMPILES_SILKPRE)
         evmone-state PRIVATE
         precompiles_silkpre.hpp
         precompiles_silkpre.cpp
+    )
+endif()
+
+# This is done after Silkpre because it also tries to find GMP.
+option(EVMONE_PRECOMPILES_GMP "Enable precompiles implementations via the GMP/MPIR library" OFF)
+if(EVMONE_PRECOMPILES_GMP)
+    find_package(GMP REQUIRED)
+    target_link_libraries(evmone-state PRIVATE GMP::gmp)
+    target_compile_definitions(evmone-state PUBLIC EVMONE_PRECOMPILES_GMP=1)
+    target_sources(
+        evmone-state PRIVATE
+        precompiles_gmp.hpp
+        precompiles_gmp.cpp
     )
 endif()

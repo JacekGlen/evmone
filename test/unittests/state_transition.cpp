@@ -57,8 +57,8 @@ void state_transition::TearDown()
     if (trace)
         trace_capture.emplace();
 
-    const auto res = test::transition(state, block, tx, rev, selected_vm, block.gas_limit,
-        state::BlockInfo::MAX_BLOB_GAS_PER_BLOCK);
+    const auto res = test::transition(state, block, block_hashes, tx, rev, selected_vm,
+        block.gas_limit, static_cast<int64_t>(state::max_blob_gas_per_block(rev)));
     test::finalize(state, rev, block.coinbase, block_reward, block.ommers, block.withdrawals);
     const auto& post = state;
 
@@ -85,7 +85,7 @@ void state_transition::TearDown()
         }
         // Update default expectations - valid transaction means coinbase exists unless explicitly
         // requested otherwise
-        if (expect.post.find(Coinbase) == expect.post.end())
+        if (!expect.post.contains(Coinbase))
             expect.post[Coinbase].exists = true;
     }
 
@@ -200,6 +200,13 @@ void state_transition::export_state_test(
         jtx["gasPrice"] = hex0x(tx.max_gas_price);
     }
 
+    if (tx.type == Transaction::Type::initcodes)
+    {
+        auto& jinitcodes = jtx["initcodes"] = json::json::array();
+        for (const auto& initcode : tx.initcodes)
+            jinitcodes.emplace_back(hex0x(initcode));
+    }
+
     jtx["data"][0] = hex0x(tx.data);
     jtx["gasLimit"][0] = hex0x(tx.gas_limit);
     jtx["value"][0] = hex0x(tx.value);
@@ -221,6 +228,35 @@ void state_transition::export_state_test(
             ja.emplace_back(std::move(je));
         }
     }
+
+    if (tx.type == Transaction::Type::blob)
+    {
+        jtx["maxFeePerBlobGas"] = hex0x(tx.max_blob_gas_price);
+        jtx["blobVersionedHashes"] = json::json::array();
+        for (const auto& blob_hash : tx.blob_hashes)
+        {
+            jtx["blobVersionedHashes"].emplace_back(hex0x(blob_hash));
+        }
+    }
+
+    if (!tx.authorization_list.empty())
+    {
+        auto& ja = jtx["authorizationList"];
+        for (const auto& [chain_id, addr, nonce, signer, r, s, y_parity] : tx.authorization_list)
+        {
+            json::json je;
+            je["chainId"] = hex0x(chain_id);
+            je["address"] = hex0x(addr);
+            je["nonce"] = hex0x(nonce);
+            je["v"] = hex0x(y_parity);
+            je["r"] = hex0x(r);
+            je["s"] = hex0x(s);
+            if (signer.has_value())
+                je["signer"] = hex0x(*signer);
+            ja.emplace_back(std::move(je));
+        }
+    }
+
 
     auto& jpost = jt["post"][to_test_fork_name(rev)][0];
     jpost["indexes"] = {{"data", 0}, {"gas", 0}, {"value", 0}};

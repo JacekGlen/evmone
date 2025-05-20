@@ -5,6 +5,134 @@ Documentation of all notable changes to the **evmone** project.
 The format is based on [Keep a Changelog],
 and this project adheres to [Semantic Versioning].
 
+[0.15.0] — 2025-04-08
+
+### Changed
+
+- EOF:
+  The is the final version compatible with [EOF devnet-0](https://notes.ethereum.org/@ethpandaops/eof-devnet-0).
+  - Rename RETURNCONTRACT to RETURNCODE
+    [#1153](https://github.com/ethereum/evmone/pull/1153)
+  - Optimize allocations when validating the header
+    [#1160](https://github.com/ethereum/evmone/pull/1160)
+- EVMMAX:
+  - evmmax: Add inversion method
+    [#1142](https://github.com/ethereum/evmone/pull/1142)
+  - evmmax: Use inv() instead of generated addchains
+    [#1143](https://github.com/ethereum/evmone/pull/1143)
+- Precompiles:
+  - Handle trivial inputs to the expmod precompile
+    [#1163](https://github.com/ethereum/evmone/pull/1163)
+  - Use classic EC point add formula for BN precompiles
+    [#1165](https://github.com/ethereum/evmone/pull/1165)
+  - Optimize EC point multiplication for BN precompiles
+    [#1166](https://github.com/ethereum/evmone/pull/1166)
+  - Refactor the BN254 ecpairing precompile
+    [#1175](https://github.com/ethereum/evmone/pull/1175)
+- EIP-7702: Remove the check for empty in-state accounts
+  [#1141](https://github.com/ethereum/evmone/pull/1141)
+- Add prestate validation checks to the state test loader
+  [#1134](https://github.com/ethereum/evmone/pull/1134)
+- Upgrade the silkpre dependency
+  [#1173](https://github.com/ethereum/evmone/pull/1173)
+
+### Fixed
+
+- Fix incorrect output size in the BN254 ecpairing precompile
+  [#1174](https://github.com/ethereum/evmone/pull/1174)
+
+
+[0.14.1] — 2025-03-11
+
+### Fixed
+
+- Fixes and improvements to BLS precompiles ([EIP-2537]).
+  [#1155](https://github.com/ethereum/evmone/pull/1155)
+  [#1154](https://github.com/ethereum/evmone/pull/1154)
+  [#1150](https://github.com/ethereum/evmone/pull/1150)
+  [#1151](https://github.com/ethereum/evmone/pull/1151)
+  [#1148](https://github.com/ethereum/evmone/pull/1148)
+- Check for topic when parsing deposit contract logs ([EIP-6110]).
+  [#1152](https://github.com/ethereum/evmone/pull/1152)
+
+### Changed
+
+- Improvements to EOF validation.
+  [#1137](https://github.com/ethereum/evmone/pull/1137)
+  [#1144](https://github.com/ethereum/evmone/pull/1144)
+  [#1145](https://github.com/ethereum/evmone/pull/1145)
+  
+
+[0.14.0] — 2025-02-19
+
+### Added
+
+- Support for all remaining [Prague] EIPs:
+  - [EIP-6110]: Supply validator deposits on chain.
+    [#1079](https://github.com/ethereum/evmone/pull/1079)
+  - [EIP-7002] and [EIP-7251]: Withdrawal and consolidation requests.
+    [#1084](https://github.com/ethereum/evmone/pull/1084)
+  - [EIP-7623]: Increase calldata cost.
+    [#1095](https://github.com/ethereum/evmone/pull/1095)
+    [#1108](https://github.com/ethereum/evmone/pull/1108)
+  - [EIP-7685]: General purpose execution layer requests.
+    [#1083](https://github.com/ethereum/evmone/pull/1083)
+  - [EIP-7691]: Blob throughput increase.
+    [#1118](https://github.com/ethereum/evmone/pull/1118)
+  - [EIP-7702]: Set EOA account code.
+    [#961](https://github.com/ethereum/evmone/pull/961)
+- EVMMAX-based BN254 pairing check precompile.
+    [#852](hptps://github.com/ethereum/evmone/pull/852)
+- New API for transaction execution: `StateView` & `StateDiff`.
+  [#802](https://github.com/ethereum/evmone/pull/802)
+- Introduce `BlockHashes` interface.
+  [#1059](https://github.com/ethereum/evmone/pull/1059)
+- Add option `-k` to filter tests by name in `evmone-statetest`.
+  [#1111](https://github.com/ethereum/evmone/pull/1111)
+- Add support for [EIP-4844] in blockchain tests.
+  [#1077](https://github.com/ethereum/evmone/pull/1077)
+- Add GDB pretty printers for common bytes and uint256 types.
+  [#1024](https://github.com/ethereum/evmone/pull/1024)
+
+### Changed
+
+- Improvements to **EOF** validation and execution:
+  - Move EOF to Osaka.
+    [#1060](https://github.com/ethereum/evmone/pull/1060)
+  - Optimized EOF validation using `std::move`.
+    [#1036](https://github.com/ethereum/evmone/pull/1036)
+  - Return constant hash of EXTCODEHASH of EOF.
+    [#1035](https://github.com/ethereum/evmone/pull/1035)
+  - Optimized EOF by reading types on demand.
+    [#1034](https://github.com/ethereum/evmone/pull/1034)
+  - Move EOF type validation outside of header validation.
+    [#1052](https://github.com/ethereum/evmone/pull/1052)
+  - Improve `has_full_data()` helper.
+    [#1097](https://github.com/ethereum/evmone/pull/1097)
+- Updates to BLS precompiles ([EIP-2537]).
+  [#1089](https://github.com/ethereum/evmone/pull/1089)
+- State and transaction execution improvements:
+  - Split transaction and block related types.
+    [#1031](https://github.com/ethereum/evmone/pull/1031)
+  - Avoid returning bytes_view in system contracts.
+    [#1048](https://github.com/ethereum/evmone/pull/1048)
+  - Implement `CREATE` address scheme without RLP lib.
+    [#1055](https://github.com/ethereum/evmone/pull/1055)
+  - Separate transaction validation from transition.
+    [#1069](https://github.com/ethereum/evmone/pull/1069)
+  - Introduce TransactionProperties.
+    [#1098](https://github.com/ethereum/evmone/pull/1098)
+  - Simplify code modification indicator in StateDiff.
+    [#1117](https://github.com/ethereum/evmone/pull/1117)
+- Requirements and dependencies updates:
+  - [EVMC] [12.1.0][EVMC 12.1.0] with EIP-7702 support.
+    [#1125](https://github.com/ethereum/evmone/pull/1125)
+  - [intx] [0.12.1][intx 0.12.1]
+    [#1131](https://github.com/ethereum/evmone/pull/1131)
+  - [ethash] [1.1.0][ethash 1.1.0]
+    [#1131](https://github.com/ethereum/evmone/pull/1131)
+
+
 ## [0.13.0] — 2024-09-23
 
 This release adds BLS precompiles and a system contract for [Prague]
@@ -841,6 +969,9 @@ It delivers fully-compatible and high-speed EVM implementation.
 - Exposes [EVMC] 6 ABI.
 - The [intx 0.2.0](https://github.com/chfast/intx/releases/tag/v0.2.0) library is used for 256-bit precision arithmetic. 
 
+[0.15.0]: https://github.com/ethereum/evmone/releases/tag/v0.15.0
+[0.14.1]: https://github.com/ethereum/evmone/releases/tag/v0.14.1
+[0.14.0]: https://github.com/ethereum/evmone/releases/tag/v0.14.0
 [0.13.0]: https://github.com/ethereum/evmone/releases/tag/v0.13.0
 [0.12.0]: https://github.com/ethereum/evmone/releases/tag/v0.12.0
 [0.11.0]: https://github.com/ethereum/evmone/releases/tag/v0.11.0
@@ -884,9 +1015,16 @@ It delivers fully-compatible and high-speed EVM implementation.
 [EIP-5450]: https://eips.ethereum.org/EIPS/eip-5450
 [EIP-5656]: https://eips.ethereum.org/EIPS/eip-5656
 [EIP-6780]: https://eips.ethereum.org/EIPS/eip-6780
+[EIP-6110]: https://eips.ethereum.org/EIPS/eip-6110
+[EIP-7002]: https://eips.ethereum.org/EIPS/eip-7002
+[EIP-7251]: https://eips.ethereum.org/EIPS/eip-7251
 [EIP-7516]: https://eips.ethereum.org/EIPS/eip-7516
+[EIP-7623]: https://eips.ethereum.org/EIPS/eip-7623
 [EIP-7610]: https://eips.ethereum.org/EIPS/eip-7610
+[EIP-7685]: https://eips.ethereum.org/EIPS/eip-7685
+[EIP-7691]: https://eips.ethereum.org/EIPS/eip-7691
 [EIP-7692]: https://eips.ethereum.org/EIPS/eip-7692
+[EIP-7702]: https://eips.ethereum.org/EIPS/eip-7702
 
 [Spurious Dragon]: https://eips.ethereum.org/EIPS/eip-607
 [Petersburg]: https://eips.ethereum.org/EIPS/eip-1716
@@ -898,6 +1036,7 @@ It delivers fully-compatible and high-speed EVM implementation.
 [Prague]: https://eips.ethereum.org/EIPS/eip-7600
 
 [EVMC]: https://github.com/ethereum/evmc
+[EVMC 12.1.0]: https://github.com/ethereum/evmc/releases/tag/v12.1.0
 [EVMC 12.0.0]: https://github.com/ethereum/evmc/releases/tag/v12.0.0
 [EVMC 11.0.1]: https://github.com/ethereum/evmc/releases/tag/v11.0.1
 [EVMC 10.1.0]: https://github.com/ethereum/evmc/releases/tag/v10.1.0
@@ -910,6 +1049,7 @@ It delivers fully-compatible and high-speed EVM implementation.
 [EVMC 7.0.0]: https://github.com/ethereum/evmc/releases/tag/v7.0.0
 
 [intx]: https://github.com/chfast/intx
+[intx 0.12.1]: https://github.com/chfast/intx/releases/tag/v0.12.1
 [intx 0.11.0]: https://github.com/chfast/intx/releases/tag/v0.11.0
 [intx 0.10.1]: https://github.com/chfast/intx/releases/tag/v0.10.1
 [intx 0.10.0]: https://github.com/chfast/intx/releases/tag/v0.10.0
@@ -918,8 +1058,9 @@ It delivers fully-compatible and high-speed EVM implementation.
 [intx 0.5.0]: https://github.com/chfast/intx/releases/tag/v0.5.0
 
 [ethash]: https://github.com/chfast/ethash
-[ethash 0.7.0]: https://github.com/chfast/ethash/releases/tag/v0.7.0
+[ethash 1.1.0]: https://github.com/chfast/ethash/releases/tag/v1.1.0
 [ethash 1.0.0]: https://github.com/chfast/ethash/releases/tag/v1.0.0
+[ethash 0.7.0]: https://github.com/chfast/ethash/releases/tag/v0.7.0
 
 [ethereum/tests]: https://github.com/ethereum/tests
 [Ethereum Execution Tests]: https://github.com/ethereum/tests

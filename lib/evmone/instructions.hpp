@@ -18,25 +18,28 @@ using code_iterator = const uint8_t*;
 /// and allows retrieving stack items and manipulating the pointer.
 class StackTop
 {
-    uint256* m_top;
+    uint256* m_end;  ///< Pointer to the stack end (1 slot above the stack top item).
 
 public:
-    StackTop(uint256* top) noexcept : m_top{top} {}
+    explicit(false) StackTop(uint256* end) noexcept : m_end{end} {}
+
+    /// Returns the pointer to the stack end (the stack slot above the top item).
+    [[nodiscard]] uint256* end() noexcept { return m_end; }
 
     /// Returns the reference to the stack item by index, where 0 means the top item
     /// and positive index values the items further down the stack.
     /// Using [-1] is also valid, but .push() should be used instead.
-    [[nodiscard]] uint256& operator[](int index) noexcept { return m_top[-index]; }
+    [[nodiscard]] uint256& operator[](int index) noexcept { return m_end[-1 - index]; }
 
     /// Returns the reference to the stack top item.
-    [[nodiscard]] uint256& top() noexcept { return *m_top; }
+    [[nodiscard]] uint256& top() noexcept { return m_end[-1]; }
 
     /// Returns the current top item and move the stack top pointer down.
     /// The value is returned by reference because the stack slot remains valid.
-    [[nodiscard]] uint256& pop() noexcept { return *m_top--; }
+    [[nodiscard]] uint256& pop() noexcept { return *--m_end; }
 
     /// Assigns the value to the stack top and moves the stack top pointer up.
-    void push(const uint256& value) noexcept { *++m_top = value; }
+    void push(const uint256& value) noexcept { *m_end++ = value; }
 };
 
 
@@ -58,13 +61,13 @@ constexpr auto word_size = 32;
 
 /// Returns number of words what would fit to provided number of bytes,
 /// i.e. it rounds up the number bytes to number of words.
-inline constexpr int64_t num_words(uint64_t size_in_bytes) noexcept
+constexpr int64_t num_words(uint64_t size_in_bytes) noexcept
 {
     return static_cast<int64_t>((size_in_bytes + (word_size - 1)) / word_size);
 }
 
 /// Computes gas cost of copying the given amount of bytes to/from EVM memory.
-inline constexpr int64_t copy_cost(uint64_t size_in_bytes) noexcept
+constexpr int64_t copy_cost(uint64_t size_in_bytes) noexcept
 {
     constexpr auto WordCopyCost = 3;
     return num_words(size_in_bytes) * WordCopyCost;
@@ -1093,18 +1096,19 @@ Result create_impl(StackTop stack, int64_t gas_left, ExecutionState& state) noex
 inline constexpr auto create = create_impl<OP_CREATE>;
 inline constexpr auto create2 = create_impl<OP_CREATE2>;
 
-Result eofcreate(
+template <Opcode Op>
+Result create_eof_impl(
     StackTop stack, int64_t gas_left, ExecutionState& state, code_iterator& pos) noexcept;
+inline constexpr auto eofcreate = create_eof_impl<OP_EOFCREATE>;
+inline constexpr auto txcreate = create_eof_impl<OP_TXCREATE>;
 
 inline code_iterator callf(StackTop stack, ExecutionState& state, code_iterator pos) noexcept
 {
     const auto index = read_uint16_be(&pos[1]);
     const auto& header = state.analysis.baseline->eof_header();
-    const auto stack_size = &stack.top() - state.stack_space.bottom();
-
-    const auto callee_required_stack_size =
-        header.types[index].max_stack_height - header.types[index].inputs;
-    if (stack_size + callee_required_stack_size > StackSpace::limit)
+    const auto stack_size = stack.end() - state.stack_space.bottom();
+    const auto callee_type = header.get_type(state.original_code, index);
+    if (stack_size + callee_type.max_stack_increase > StackSpace::limit)
     {
         state.status = EVMC_STACK_OVERFLOW;
         return nullptr;
@@ -1133,11 +1137,9 @@ inline code_iterator jumpf(StackTop stack, ExecutionState& state, code_iterator 
 {
     const auto index = read_uint16_be(&pos[1]);
     const auto& header = state.analysis.baseline->eof_header();
-    const auto stack_size = &stack.top() - state.stack_space.bottom();
-
-    const auto callee_required_stack_size =
-        header.types[index].max_stack_height - header.types[index].inputs;
-    if (stack_size + callee_required_stack_size > StackSpace::limit)
+    const auto stack_size = stack.end() - state.stack_space.bottom();
+    const auto callee_type = header.get_type(state.original_code, index);
+    if (stack_size + callee_type.max_stack_increase > StackSpace::limit)
     {
         state.status = EVMC_STACK_OVERFLOW;
         return nullptr;
@@ -1164,7 +1166,7 @@ inline TermResult return_impl(StackTop stack, int64_t gas_left, ExecutionState& 
 inline constexpr auto return_ = return_impl<EVMC_SUCCESS>;
 inline constexpr auto revert = return_impl<EVMC_REVERT>;
 
-inline TermResult returncontract(
+inline TermResult returncode(
     StackTop stack, int64_t gas_left, ExecutionState& state, code_iterator pos) noexcept
 {
     const auto& offset = stack[0];

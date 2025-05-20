@@ -54,11 +54,12 @@ struct StateTransitionTest
 
         evmc_revision rev;
         std::vector<Expectation> expectations;
+        state::BlockInfo block;
     };
 
     std::string name;
     TestState pre_state;
-    state::BlockInfo block;
+    TestBlockHashes block_hashes;
     TestMultiTransaction multi_tx;
     std::vector<Case> cases;
     std::unordered_map<uint64_t, std::string> input_labels;
@@ -82,8 +83,10 @@ hash256 from_json<hash256>(const json::json& j);
 template <>
 bytes from_json<bytes>(const json::json& j);
 
+state::BlockInfo from_json_with_rev(const json::json& j, evmc_revision rev);
+
 template <>
-state::BlockInfo from_json<state::BlockInfo>(const json::json& j);
+TestBlockHashes from_json<TestBlockHashes>(const json::json& j);
 
 template <>
 state::Withdrawal from_json<state::Withdrawal>(const json::json& j);
@@ -132,3 +135,13 @@ inline std::string hex0x(const bytes_view& v)
     return "0x" + evmc::hex(v);
 }
 }  // namespace evmone::test
+
+inline std::ostream& operator<<(std::ostream& out, const evmone::address& a)
+{
+    return out << evmone::test::hex0x(a);
+}
+
+inline std::ostream& operator<<(std::ostream& out, const evmone::bytes32& b)
+{
+    return out << evmone::test::hex0x(b);
+}

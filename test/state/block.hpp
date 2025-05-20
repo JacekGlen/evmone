@@ -32,36 +32,48 @@ struct Withdrawal
 
 struct BlockInfo
 {
-    /// Max amount of blob gas allowed in block. It's constant now but can be dynamic in the future.
-    static constexpr int64_t MAX_BLOB_GAS_PER_BLOCK = 786432;
-
     int64_t number = 0;
     int64_t timestamp = 0;
     int64_t parent_timestamp = 0;
     int64_t gas_limit = 0;
+    int64_t gas_used = 0;
     address coinbase;
     int64_t difficulty = 0;
     int64_t parent_difficulty = 0;
     hash256 parent_ommers_hash;
     bytes32 prev_randao;
     hash256 parent_beacon_block_root;
+
+    /// The EIP-1559 base fee, since London.
     uint64_t base_fee = 0;
+
+    /// The "blob gas used" parameter from EIP-4844
+    std::optional<uint64_t> blob_gas_used;
 
     /// The "excess blob gas" parameter from EIP-4844
     /// for computing the blob gas price in the current block.
-    uint64_t excess_blob_gas = 0;
+    std::optional<uint64_t> excess_blob_gas;
 
-    /// The blob gas price parameter from EIP-4844.
-    /// This values is not stored in block headers directly but computed from excess_blob_gas.
-    intx::uint256 blob_base_fee = 0;
+    /// Blob gas price from EIP-4844, computed from excess_blob_gas.
+    std::optional<intx::uint256> blob_base_fee;
 
     std::vector<Ommer> ommers;
     std::vector<Withdrawal> withdrawals;
-    std::unordered_map<int64_t, hash256> known_block_hashes;
 };
 
+/// Base fee per gas for the block.
+uint64_t calc_base_fee(
+    int64_t parent_gas_limit, int64_t parent_gas_used, uint64_t parent_base_fee) noexcept;
+
+/// Max amount of blob gas allowed in block.
+uint64_t max_blob_gas_per_block(evmc_revision rev) noexcept;
+
 /// Computes the current blob gas price based on the excess blob gas.
-intx::uint256 compute_blob_gas_price(uint64_t excess_blob_gas) noexcept;
+intx::uint256 compute_blob_gas_price(evmc_revision rev, uint64_t excess_blob_gas) noexcept;
+
+/// Computes the current excess blob gas based on parameters of the parent block.
+uint64_t calc_excess_blob_gas(
+    evmc_revision rev, uint64_t parent_blob_gas_used, uint64_t parent_excess_blob_gas) noexcept;
 
 /// Defines how to RLP-encode a Withdrawal.
 [[nodiscard]] bytes rlp_encode(const Withdrawal& withdrawal);

@@ -5,6 +5,7 @@
 #pragma once
 
 #include "bloom_filter.hpp"
+#include "state_diff.hpp"
 #include <intx/intx.hpp>
 #include <optional>
 #include <vector>
@@ -12,6 +13,20 @@
 namespace evmone::state
 {
 using AccessList = std::vector<std::pair<address, std::vector<bytes32>>>;
+
+struct Authorization
+{
+    intx::uint256 chain_id;
+    address addr;
+    uint64_t nonce = 0;
+    /// Signer is empty if it cannot be ecrecovered from r, s, v.
+    std::optional<address> signer;
+    intx::uint256 r;
+    intx::uint256 s;
+    intx::uint256 v;
+};
+
+using AuthorizationList = std::vector<Authorization>;
 
 struct Transaction
 {
@@ -35,13 +50,21 @@ struct Transaction
         /// The typed blob transaction (with array of blob hashes).
         /// Introduced by EIP-4844 https://eips.ethereum.org/EIPS/eip-4844.
         blob = 3,
+
+        /// The typed set code transaction (with authorization list).
+        /// Introduced by EIP-7702 https://eips.ethereum.org/EIPS/eip-7702.
+        set_code = 4,
+
+        /// The typed transaction with initcode list.
+        /// Introduced by EIP-7873 https://eips.ethereum.org/EIPS/eip-7873.
+        initcodes = 6,
     };
 
     /// Returns amount of blob gas used by this transaction
-    [[nodiscard]] int64_t blob_gas_used() const
+    [[nodiscard]] uint64_t blob_gas_used() const
     {
         static constexpr auto GAS_PER_BLOB = 0x20000;
-        return GAS_PER_BLOB * static_cast<int64_t>(blob_hashes.size());
+        return GAS_PER_BLOB * blob_hashes.size();
     }
 
     Type type = Type::legacy;
@@ -60,13 +83,25 @@ struct Transaction
     intx::uint256 r;
     intx::uint256 s;
     uint8_t v = 0;
+    AuthorizationList authorization_list;
+    std::vector<bytes> initcodes;
+};
+
+/// Transaction properties computed during the validation needed for the execution.
+struct TransactionProperties
+{
+    /// The amount of gas provided to the EVM for the transaction execution.
+    int64_t execution_gas_limit = 0;
+
+    /// The minimal amount of gas the transaction must use.
+    int64_t min_gas_cost = 0;
 };
 
 struct Log
 {
     address addr;
     bytes data;
-    std::vector<hash256> topics;
+    std::vector<bytes32> topics;
 };
 
 /// Transaction Receipt
@@ -90,6 +125,7 @@ struct TransactionReceipt
     int64_t cumulative_gas_used = 0;
     std::vector<Log> logs;
     BloomFilter logs_bloom_filter;
+    StateDiff state_diff;
 
     /// Root hash of the state after this transaction. Used only in old pre-Byzantium transactions.
     std::optional<bytes32> post_state;
@@ -103,4 +139,7 @@ struct TransactionReceipt
 
 /// Defines how to RLP-encode a Log.
 [[nodiscard]] bytes rlp_encode(const Log& log);
+
+/// Defines how to RLP-encode an Authorization (EIP-7702).
+[[nodiscard]] bytes rlp_encode(const Authorization& authorization);
 }  // namespace evmone::state

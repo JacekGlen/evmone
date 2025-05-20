@@ -1,8 +1,9 @@
 // evmone: Fast Ethereum Virtual Machine implementation
 // Copyright 2022 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
-
 #pragma once
+
+#include <cstdint>
 
 namespace evmone
 {
@@ -175,7 +176,8 @@ enum Opcode : uint8_t
     OP_EXCHANGE = 0xe8,
 
     OP_EOFCREATE = 0xec,
-    OP_RETURNCONTRACT = 0xee,
+    OP_TXCREATE = 0xed,
+    OP_RETURNCODE = 0xee,
 
     OP_CREATE = 0xf0,
     OP_CALL = 0xf1,
