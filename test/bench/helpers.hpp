@@ -5,6 +5,7 @@
 
 #include "test/state/host.hpp"
 #include "test/utils/utils.hpp"
+#include "test/statetest/statetest.hpp"
 #include <benchmark/benchmark.h>
 #include <evmc/evmc.hpp>
 #include <evmc/mocked_host.hpp>
@@ -103,10 +104,13 @@ inline void bench_execute(benchmark::State& state, evmc::VM& vm, bytes_view code
     constexpr auto gas_limit = default_gas_limit;
 
     const auto analysis = analyse_fn(rev, code);
-    state::State ss;
+    evmone::test::TestBlockHashes block_hashes;
+    evmone::test::TestState ts;
+    state::State ss{ts};
     state::BlockInfo blockInfo = {.gas_limit = gas_limit};
     state::Transaction tx = {.gas_limit = gas_limit};
-    state::Host host{rev, vm, ss, blockInfo, tx};
+    state::Host host{rev, vm, ss, blockInfo, block_hashes, tx};
+
     ExecutionStateT exec_state;
     evmc_message msg{};
     msg.kind = EVMC_CALL;
